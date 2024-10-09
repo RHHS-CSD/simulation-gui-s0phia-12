@@ -26,6 +26,7 @@ package automatastarter;
 
 import utils.CardSwitcher;
 import java.awt.CardLayout;
+import java.awt.Color;
 import java.awt.event.ComponentAdapter;
 
 /**
@@ -46,7 +47,7 @@ public class FrameForGame extends javax.swing.JFrame implements CardSwitcher {
         //card layout shows one panel at a time
         cl = new CardLayout();
         cardPanel.setLayout(cl);
-
+        
         //add 3 panels to the CardLayout
         addPanels();
         switchToCard(IntroPanel.CARD_NAME);

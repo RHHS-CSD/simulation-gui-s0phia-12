@@ -5,24 +5,67 @@
  */
 package automatastarter;
 
+import static automatastarter.GamePanel.speed;
 import utils.CardSwitcher;
 import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import javax.swing.JPanel;
+import javax.swing.Timer;
 
 /**
  *
  * @author michael.roy-diclemen
  */
 public class IntroPanel extends javax.swing.JPanel {
-        public static final String CARD_NAME = "intro";
+    public static final String CARD_NAME = "intro";
     CardSwitcher switcher = null;
+    
+    //get images
+    Image img1 = Toolkit.getDefaultToolkit().getImage("deer.jpg");
+    Image img2 = Toolkit.getDefaultToolkit().getImage("wolf.jpg");
+    
+    int y = 210;
+    
+    Timer animTimer = new Timer(10, new AnimTimerTick());
+    
+    
     /**
      * Creates new form IntroPanel
      */
     public IntroPanel(CardSwitcher p) {
+        animTimer.start();
         initComponents();
         switcher = p;
     }
+    
+    public void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        
+        setBackground(Color.WHITE);
+        //draw images
+        if (img1 != null) {
+            g.drawImage(img1, 650, y, this);
+        }
+        if (img2 != null) {
+            g.drawImage(img2, 30, y, this);
+        }
+    }
+    
+    private class AnimTimerTick implements ActionListener {
+        //animate image
+        public void actionPerformed(ActionEvent ae) {
+            y++;
+            repaint();
+
+        }
+    }
+    
+
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -35,6 +78,7 @@ public class IntroPanel extends javax.swing.JPanel {
 
         GameButton = new javax.swing.JButton();
         infoButton = new javax.swing.JButton();
+        jLabel1 = new javax.swing.JLabel();
 
         GameButton.setText("Play");
         GameButton.addActionListener(new java.awt.event.ActionListener() {
@@ -51,25 +95,36 @@ public class IntroPanel extends javax.swing.JPanel {
             }
         });
 
+        jLabel1.setFont(new java.awt.Font("Luminari", 0, 60)); // NOI18N
+        jLabel1.setForeground(new java.awt.Color(153, 0, 51));
+        jLabel1.setText("Predator & Prey");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(125, 125, 125)
-                .addComponent(GameButton)
-                .addGap(29, 29, 29)
-                .addComponent(infoButton)
-                .addContainerGap(502, Short.MAX_VALUE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(274, 274, 274)
+                        .addComponent(GameButton, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(29, 29, 29)
+                        .addComponent(infoButton, javax.swing.GroupLayout.PREFERRED_SIZE, 90, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(166, 166, 166)
+                        .addComponent(jLabel1)))
+                .addContainerGap(178, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addGap(194, 194, 194)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(210, Short.MAX_VALUE)
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 104, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(68, 68, 68)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(infoButton)
-                    .addComponent(GameButton))
-                .addContainerGap(383, Short.MAX_VALUE))
+                    .addComponent(infoButton, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(GameButton, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(183, 183, 183))
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -85,5 +140,6 @@ public class IntroPanel extends javax.swing.JPanel {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton GameButton;
     private javax.swing.JButton infoButton;
+    private javax.swing.JLabel jLabel1;
     // End of variables declaration//GEN-END:variables
 }

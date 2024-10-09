@@ -24,12 +24,10 @@ import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 import javax.swing.Timer;
-import utils.Main;
-import static utils.Main.initializeGrid;
-
 /**
  *
  * @author michael.roy-diclemen
@@ -58,15 +56,21 @@ public class GamePanel extends javax.swing.JPanel implements MouseListener {
     static final double PREY_REPRODUCTION_RATE = 0.10;
     static final double PREDATOR_REPRODUCTION_RATE = 0.05;
     static final int CELL_SIZE = 30;
+    
+    static int speed = 1000;
+    
     //initialize grid
     static int [][] grid = new int[GRID_SIZE][GRID_SIZE];
     static int[][] stepsWithoutFood = new int[GRID_SIZE][GRID_SIZE];
     
     static Random r = new Random();
+    private JLabel predatorCountLabel;
+    private JLabel preyCountLabel;
     
     /**
      * Creates new form GamePanel
      */
+    
     public GamePanel(CardSwitcher p) {
         initComponents();
 
@@ -78,31 +82,33 @@ public class GamePanel extends javax.swing.JPanel implements MouseListener {
         addMouseListener(this);
         //tells us the panel that controls this one
         switcher = p;
+        
+        initializeGrid();
+        
         //create and start a Timer for animation
-        animTimer = new Timer(10, new AnimTimerTick());
-        animTimer.start();
-
-        //set up the key bindings
-        //setupKeys();
-
+        animTimer = new Timer(speed, new AnimTimerTick());
+        
+        //predator & prey label
+        predatorCountLabel = new JLabel("Predators: ");
+        preyCountLabel = new JLabel("Prey: ");
+        
+        predatorCountLabel.setBounds(650, 500, 150, 30); // Position of predator label
+        preyCountLabel.setBounds(650, 520, 150, 30); // Position of prey label
+        
+        add(predatorCountLabel);
+        add(preyCountLabel);
     }
-
-//    private void setupKeys() {
-//        //these lines map a physical key, to a name, and then a name to an 'action'.  You will change the key, name and action to suit your needs
-//        this.getInputMap().put(KeyStroke.getKeyStroke("LEFT"), "leftKey");
-//        this.getActionMap().put("leftKey", new Move("LEFT"));
-//
-//        this.getInputMap().put(KeyStroke.getKeyStroke("W"), "wKey");
-//        this.getActionMap().put("wKey", new Move("w"));
-//
-//        this.getInputMap().put(KeyStroke.getKeyStroke("D"), "dKey");
-//        this.getActionMap().put("dKey", new Move("d"));
-//
-//        this.getInputMap().put(KeyStroke.getKeyStroke("X"), "xKey");
-//        this.getActionMap().put("xKey", new Move("x"));
-//    }
     
+    /**
+     * create grid & fill with predator, prey & food
+     */
     public static void initializeGrid() {
+        //fill empty spaces
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+                grid[i][j] = 0;
+            }
+        }
         //generate prey in random spaces on the grid
         for (int i = 0; i < PREY_COUNT; i++) {
             int x, y;
@@ -163,6 +169,11 @@ public class GamePanel extends javax.swing.JPanel implements MouseListener {
                         grid[newPos[0]][newPos[1]] = grid[i][j];
                         grid[i][j] = 0;
                     }
+                    //eat food
+                    else if (grid[newPos[0]][newPos[1]] == 3) {
+                        grid[newPos[0]][newPos[1]] = grid[i][j];
+                        grid[i][j] = 0;
+                    }
                 }   
             }
         }
@@ -192,15 +203,19 @@ public class GamePanel extends javax.swing.JPanel implements MouseListener {
 
         int moveY = 0;
         if (dy > 0) moveY = 1;
-//        else if (dy < 0) moveY = -1;
+        else if (dy < 0) moveY = -1;
 
-        // Calculate new position with wrap-around
+        //calculate new position with wrap-around
         int newX = (x + moveX + GRID_SIZE) % GRID_SIZE;
         int newY = (y + moveY + GRID_SIZE) % GRID_SIZE;
         
         int [] newPos = {newX, newY};
         return newPos;
     }
+    
+    /**
+     * moves predator towards nearest prey
+     */
     static void movePredator () {
         for (int i = 0; i < GRID_SIZE; i++) {
             for (int j = 0; j < GRID_SIZE; j++) {
@@ -211,9 +226,9 @@ public class GamePanel extends javax.swing.JPanel implements MouseListener {
                     if (preyPos != null) {
                         newPos = moveTowards(i, j, preyPos);
                         if (grid[newPos[0]][newPos[1]] == 1) {
-                            grid[newPos[0]][newPos[1]] = 2;  // Predator eats prey and moves
+                            grid[newPos[0]][newPos[1]] = 2;  //predator eats prey and moves
                             grid[i][j] = 0;
-                            stepsWithoutFood[newPos[0]][newPos[1]] = 0;  // Reset steps without food
+                            stepsWithoutFood[newPos[0]][newPos[1]] = 0;  //reset steps without food
                         }
                     } else {
                         newPos = getAdjacent(i, j);
@@ -221,7 +236,7 @@ public class GamePanel extends javax.swing.JPanel implements MouseListener {
                     if (grid[newPos[0]][newPos[1]] == 0) {
                         grid[newPos[0]][newPos[1]] = 2;
                         stepsWithoutFood[newPos[0]][newPos[1]] = stepsWithoutFood[i][j];
-                        grid[i][j] = 0;  // Empty the old position
+                        grid[i][j] = 0;  //empty the old position
                     }
                 }
             }
@@ -281,6 +296,9 @@ public class GamePanel extends javax.swing.JPanel implements MouseListener {
         //if no prey found
         return null;
     }
+    /**
+     * reproduce predator & prey
+     */
     static void reproduce() {
         for (int i = 0; i < GRID_SIZE; i++) {
             for (int j = 0; j < GRID_SIZE; j++) {
@@ -314,80 +332,70 @@ public class GamePanel extends javax.swing.JPanel implements MouseListener {
         for (int d = 0; d < 4; d++) {
             int newX = (x + dx[d] + GRID_SIZE) % GRID_SIZE;
             int newY = (y + dy[d] + GRID_SIZE) % GRID_SIZE;
-            //check if it's a food cell
+            
+            //eat food
             if (grid[newX][newY] == 3) {  
-                grid[newX][newY] = 0;
+                grid[newX][newY] = 1;
                 return true;
             }
         }
         return false;
     }
-    public static void main(String[] args) {
-            initializeGrid();
-            run(100);
-    }  
-    /**
-     * Run simulation
-     * @param rounds 
-     */
-    static void run(int rounds) {
-        displayGrid(grid);
-        for (int round = 0; round < rounds; round++) {
-            movePrey();
-            movePredator(); 
-            killPredator();
-            killPrey();
-            reproduce();
-            displayGrid(grid);
-        }
-        
-    }
-    static void displayGrid(int[][] grid) {
-        // Iterate through each row and column of the grid
+
+    public void countPredatorsAndPrey() {
+        int predatorCount = 0;
+        int preyCount = 0;
+
+        //loop through the grid to count
         for (int i = 0; i < GRID_SIZE; i++) {
             for (int j = 0; j < GRID_SIZE; j++) {
-                System.out.print(grid[i][j] + " "); 
+                if (grid[i][j] == 1) {
+                    preyCount++; 
+                }
+                else if (grid[i][j] == 2) {
+                    predatorCount++;
+                }
             }
-            System.out.println();
         }
-        System.out.println();
+        //display predator prey count
+        predatorCountLabel.setText("Predators: " + predatorCount);
+        preyCountLabel.setText("Prey: " + preyCount);
+
     }
-    public void draw(int x, int y, Graphics g, Color c) {
-        g.setColor(c);
-        g.fillRect(x, y, 50, 50);
+    private void generatePrey(int mouseX, int mouseY) {
+        
+        //convert the mouse coordinates to grid coordinates
+        int gridX = mouseX / CELL_SIZE;
+        int gridY = mouseY / CELL_SIZE;
+
+        //set the grid cell to prey
+        if (gridX >= 0 && gridX < GRID_SIZE && gridY >= 0 && gridY < GRID_SIZE) {
+            grid[gridX][gridY] = 1;
+        }
+
+        repaint();
     }
 
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-//        if (img1 != null) {
-//            g.drawImage(img1, x, y, this);
-//        }
-        //draw horizontal lines
-//        for (int i = 0; i < 600; i=i+50) {
-//            g.drawLine(0, i, 800, i);
-//        }
-//        //draw vertical lines
-//        for (int i = 0; i < 800; i=i+50) {
-//            g.drawLine(i, 0, i, 600);
-//        }
         
-//        g.setColor(Color.RED);
-//        g.fillRect(x, y, 50, 50);
         for (int i = 0; i < GRID_SIZE; i++) {
             for (int j = 0; j < GRID_SIZE; j++) {
-                // Set the color based on cell type
+                //set the color based on cell type
                 if (grid[i][j] == 0) {
-                    g.setColor(Color.WHITE); // Empty cell
+                    g.setColor(Color.WHITE); //empty cell
                 } else if (grid[i][j] == 1) {
-                    g.setColor(Color.GREEN); // Prey
+                    g.setColor(Color.GREEN); //prey
                 } else if (grid[i][j] == 2) {
-                    g.setColor(Color.RED); // Predator
+                    g.setColor(Color.RED); //predator
+                } else if (grid[i][j] == 3) {
+                    g.setColor(Color.BLACK); //food
                 }
 
-                // Draw the cell as a rectangle
+                //draw the cell as a rectangle
                 g.fillRect(j * CELL_SIZE, i * CELL_SIZE, CELL_SIZE, CELL_SIZE);
 
-                // Draw grid lines
+                //draw grid lines
                 g.setColor(Color.BLACK);
                 g.drawRect(j * CELL_SIZE, i * CELL_SIZE, CELL_SIZE, CELL_SIZE);
             }
@@ -403,9 +411,43 @@ public class GamePanel extends javax.swing.JPanel implements MouseListener {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        startButton = new javax.swing.JButton();
+        stopButton = new javax.swing.JButton();
+        resetButton = new javax.swing.JButton();
+        changeSpeed = new javax.swing.JSlider();
+
         addComponentListener(new java.awt.event.ComponentAdapter() {
             public void componentShown(java.awt.event.ComponentEvent evt) {
                 formComponentShown(evt);
+            }
+        });
+
+        startButton.setText("Start");
+        startButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                startButtonActionPerformed(evt);
+            }
+        });
+
+        stopButton.setText("Stop");
+        stopButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                stopButtonActionPerformed(evt);
+            }
+        });
+
+        resetButton.setText("Reset");
+        resetButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resetButtonActionPerformed(evt);
+            }
+        });
+
+        changeSpeed.setMaximum(2000);
+        changeSpeed.setValue(1000);
+        changeSpeed.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                changeSpeedStateChanged(evt);
             }
         });
 
@@ -413,11 +455,33 @@ public class GamePanel extends javax.swing.JPanel implements MouseListener {
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 800, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap(606, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addComponent(resetButton)
+                        .addGap(75, 75, 75))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(changeSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, 162, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(startButton)
+                                .addGap(18, 18, 18)
+                                .addComponent(stopButton)))
+                        .addGap(32, 32, 32))))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 600, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addGap(32, 32, 32)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(startButton)
+                    .addComponent(stopButton))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(resetButton)
+                .addGap(18, 18, 18)
+                .addComponent(changeSpeed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(472, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -425,8 +489,29 @@ public class GamePanel extends javax.swing.JPanel implements MouseListener {
         lineX = 0;
     }//GEN-LAST:event_formComponentShown
 
+    private void startButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startButtonActionPerformed
+        animTimer.start();
+    }//GEN-LAST:event_startButtonActionPerformed
+
+    private void stopButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stopButtonActionPerformed
+        animTimer.stop();
+    }//GEN-LAST:event_stopButtonActionPerformed
+
+    private void resetButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetButtonActionPerformed
+        initializeGrid();
+    }//GEN-LAST:event_resetButtonActionPerformed
+
+    private void changeSpeedStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_changeSpeedStateChanged
+        speed = changeSpeed.getValue();
+        animTimer = new Timer(speed, new AnimTimerTick());
+    }//GEN-LAST:event_changeSpeedStateChanged
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JSlider changeSpeed;
+    private javax.swing.JButton resetButton;
+    private javax.swing.JButton startButton;
+    private javax.swing.JButton stopButton;
     // End of variables declaration//GEN-END:variables
 
     /**
@@ -437,8 +522,7 @@ public class GamePanel extends javax.swing.JPanel implements MouseListener {
      */
     public void mouseClicked(MouseEvent me) {
         System.out.println("Click: " + me.getX() + ":" + me.getY());
-        x = 5;
-        y = 5;
+        generatePrey(me.getX(), me.getY());
     }
 
     /**
@@ -478,40 +562,20 @@ public class GamePanel extends javax.swing.JPanel implements MouseListener {
     }
 
     /**
-     * Everything inside here happens when you click on a captured key.
-     */
-//    private class Move extends AbstractAction {
-//
-//        String key;
-//
-//        public Move(String akey) {
-//            key = akey;
-//        }
-//
-//        public void actionPerformed(ActionEvent ae) {
-//            // here you decide what you want to happen if a particular key is pressed
-//            System.out.println("llll" + key);
-//            switch(key){
-//                case "d": x+=2; break;
-//                case "x": animTimer.stop(); switcher.switchToCard(EndPanel.CARD_NAME); break;
-//            }
-//            if (key.equals("d")) {
-//                x = x + 2;
-//            }
-//            
-//        }
-//
-//    }
-
-    /**
      * Everything inside this actionPerformed will happen every time the
      * animation timer clicks.
      */
     private class AnimTimerTick implements ActionListener {
 
         public void actionPerformed(ActionEvent ae) {
-            //the stuff we want to change every clock tick
-//            lineX++;
+            //run simulation 
+            movePrey();
+            movePredator(); 
+            killPredator();
+            killPrey();
+            reproduce();
+            countPredatorsAndPrey();
+            
             //force redraw
             repaint();
         }
